@@ -1,8 +1,10 @@
 #include "solver.h"
 
-bool solveLine(std::vector<Cell*>& line, int target) {
+using namespace std;
+
+bool solveLine(vector<Cell*>& line, int target) {
     int n = line.size();
-    std::vector<int> validMasks;
+    vector<int> validMasks;
 
     for (int mask = 0; mask < (1 << n); ++mask) {
         int currentSum = 0;
@@ -48,10 +50,10 @@ bool solveLine(std::vector<Cell*>& line, int target) {
     return changed;
 }
 
-bool SolveSumplete(const std::vector<std::vector<int>>& gridValues, 
-                   const std::vector<int>& rowTargets, 
-                   const std::vector<int>& colTargets,
-                   std::vector<std::vector<Cell>>& resultBoard) {
+bool SolveSumplete(const vector<vector<int>>& gridValues, 
+                   const vector<int>& rowTargets, 
+                   const vector<int>& colTargets,
+                   vector<vector<Cell>>& resultBoard) {
     
     int size = gridValues.size();
     
@@ -70,13 +72,13 @@ bool SolveSumplete(const std::vector<std::vector<int>>& gridValues,
         changed = false;
 
         for (int i = 0; i < size; ++i) {
-            std::vector<Cell*> row;
+            vector<Cell*> row;
             for (int j = 0; j < size; ++j) row.push_back(&resultBoard[i][j]);
             if (solveLine(row, rowTargets[i])) changed = true;
         }
 
         for (int j = 0; j < size; ++j) {
-            std::vector<Cell*> col;
+            vector<Cell*> col;
             for (int i = 0; i < size; ++i) col.push_back(&resultBoard[i][j]);
             if (solveLine(col, colTargets[j])) changed = true;
         }

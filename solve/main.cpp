@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 #include "solver.h" 
+using namespace std;
 
 enum SelectionType { NONE, GRID_CELL, ROW_TARGET, COL_TARGET };
 
@@ -21,17 +22,17 @@ int main() {
     float cellGap = 6.0f; 
     float stepSize = cellSize + cellGap;
 
-    std::vector<std::vector<std::string>> grid(MAX_GRID, std::vector<std::string>(MAX_GRID, ""));
-    std::vector<std::string> rowTargets(MAX_GRID, "");
-    std::vector<std::string> colTargets(MAX_GRID, "");
+    vector<vector<string>> grid(MAX_GRID, vector<string>(MAX_GRID, ""));
+    vector<string> rowTargets(MAX_GRID, "");
+    vector<string> colTargets(MAX_GRID, "");
 
-    std::vector<std::vector<Cell>> solvedBoard(MAX_GRID, std::vector<Cell>(MAX_GRID));
+    vector<vector<Cell>> solvedBoard(MAX_GRID, vector<Cell>(MAX_GRID));
     bool isSolved = false; 
 
     SelectionType currentSelection = NONE;
     int selRow = -1;
     int selCol = -1;
-    std::string statusMessage = "Enter the puzzle numbers, use Arrow Keys to move.";
+    string statusMessage = "Enter the puzzle numbers, use Arrow Keys to move.";
 
     Color bgLight = { 248, 250, 252, 255 };
     Color cellBgNormal = WHITE;
@@ -57,7 +58,7 @@ int main() {
         float startX = (screenWidth - totalWidth) / 2.0f;
         float startY = (screenHeight - totalHeight) / 2.0f + 20.0f;
 
-        std::string sizeText = "Grid: " + std::to_string(gridSize) + " x " + std::to_string(gridSize);
+        string sizeText = "Grid: " + to_string(gridSize) + " x " + to_string(gridSize);
         int sizeTextW = MeasureText(sizeText.c_str(), 20);
         float blockW = 30 + 15 + sizeTextW + 15 + 30;
         float blockStartX = (screenWidth - blockW) / 2.0f;
@@ -84,21 +85,21 @@ int main() {
                 currentSelection = NONE;
                 bool isInputComplete = true;
 
-                std::vector<std::vector<int>> intGrid(gridSize, std::vector<int>(gridSize, 0));
-                std::vector<int> intRowTargets(gridSize, 0);
-                std::vector<int> intColTargets(gridSize, 0);
+                vector<vector<int>> intGrid(gridSize, vector<int>(gridSize, 0));
+                vector<int> intRowTargets(gridSize, 0);
+                vector<int> intColTargets(gridSize, 0);
 
                 try {
                     for(int i = 0; i < gridSize; i++) {
                         if(rowTargets[i] == "") isInputComplete = false;
-                        else intRowTargets[i] = std::stoi(rowTargets[i]);
+                        else intRowTargets[i] = stoi(rowTargets[i]);
                         
                         if(colTargets[i] == "") isInputComplete = false;
-                        else intColTargets[i] = std::stoi(colTargets[i]);
+                        else intColTargets[i] = stoi(colTargets[i]);
                         
                         for(int j = 0; j < gridSize; j++) {
                             if(grid[i][j] == "") isInputComplete = false;
-                            else intGrid[i][j] = std::stoi(grid[i][j]);
+                            else intGrid[i][j] = stoi(grid[i][j]);
                         }
                     }
 
@@ -147,7 +148,7 @@ int main() {
         }
 
         if (currentSelection != NONE) {
-            std::string* activeStr = nullptr;
+            string* activeStr = nullptr;
             if (currentSelection == GRID_CELL) activeStr = &grid[selRow][selCol];
             else if (currentSelection == ROW_TARGET) activeStr = &rowTargets[selRow];
             else if (currentSelection == COL_TARGET) activeStr = &colTargets[selCol];
@@ -156,7 +157,7 @@ int main() {
                 int key = GetCharPressed();
                 while (key > 0) {
                     if (currentSelection == GRID_CELL) {
-                        if ((key >= '1') && (key <= '9')) *activeStr = std::string(1, (char)key); 
+                        if ((key >= '1') && (key <= '9')) *activeStr = string(1, (char)key); 
                     } else {
                         if ((key >= '0') && (key <= '9') && activeStr->length() < 3) *activeStr += (char)key;
                     }

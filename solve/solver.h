@@ -1,6 +1,8 @@
 #pragma once
 #include <vector>
 
+using namespace std;
+
 enum CellStatus { UNKNOWN, KEEP, CELL_DELETE };
 
 struct Cell {
@@ -8,7 +10,7 @@ struct Cell {
     CellStatus status = UNKNOWN;
 };
 
-bool SolveSumplete(const std::vector<std::vector<int>>& gridValues, 
-                   const std::vector<int>& rowTargets, 
-                   const std::vector<int>& colTargets,
-                   std::vector<std::vector<Cell>>& resultBoard);
+bool SolveSumplete(const vector<vector<int>>& gridValues, 
+                   const vector<int>& rowTargets, 
+                   const vector<int>& colTargets,
+                   vector<vector<Cell>>& resultBoard);
