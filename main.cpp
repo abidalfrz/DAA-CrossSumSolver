@@ -5,13 +5,12 @@
 using namespace std;
 
 int main() {
-    const int screenWidth = 900;
-    const int screenHeight = 800;
-
+    const int screenWidth = 950;
+    const int screenHeight = 900;
     InitWindow(screenWidth, screenHeight, "CrossSum Solver");
     SetTargetFPS(60);
 
-    AppState app;
+    AppState state;
 
     Color bgLight = { 248, 250, 252, 255 };
     Color cellBgNormal = WHITE;
@@ -32,32 +31,36 @@ int main() {
     while (!WindowShouldClose()) {
         Vector2 mousePoint = GetMousePosition();
 
-        float cellSize = 50.0f;
+        float cellSize = 60.0f;
         float cellGap = 6.0f;
         float stepSize = cellSize + cellGap;
 
-        float totalWidth = (app.gridSize * stepSize) - cellGap + 20.0f + cellSize;
-        float totalHeight = (app.gridSize * stepSize) - cellGap + 20.0f + cellSize;
-        float startX = (screenWidth - totalWidth) / 2.0f;
-        float startY = (screenHeight - totalHeight) / 2.0f + 20.0f;
+        float totalGridWidth = (state.gridSize * stepSize) - cellGap + 20.0f + cellSize;
+        float totalGridHeight = (state.gridSize * stepSize) - cellGap + 20.0f + cellSize;
+        float totalUIHeight = totalGridHeight + 35.0f + 45.0f + 15.0f + 20.0f;
 
-        string sizeText = "Grid: " + to_string(app.gridSize) + " x " + to_string(app.gridSize);
+        float startX = (screenWidth - totalGridWidth) / 2.0f;
+        float startY = (screenHeight - totalUIHeight) / 2.0f + 40.0f;
+
+        string sizeText = "Grid: " + to_string(state.gridSize) + " x " + to_string(state.gridSize);
         int sizeTextW = MeasureText(sizeText.c_str(), 20);
         float blockW = 30 + 15 + sizeTextW + 15 + 30;
         float blockStartX = (screenWidth - blockW) / 2.0f;
 
         Rectangle btnMinus = { blockStartX, 35, 30, 30 };
         Rectangle btnPlus = { blockStartX + 30 + 15 + sizeTextW + 15, 35, 30, 30 };
-        Rectangle btnClear = { screenWidth / 2.0f - 110, screenHeight - 100, 100, 45 };
-        Rectangle btnSolve = { screenWidth / 2.0f + 10, screenHeight - 100, 100, 45 };
 
-        HandleAppInput(app, mousePoint, btnMinus, btnPlus, btnClear, btnSolve, startX, startY, stepSize, cellSize, screenHeight);
+        float buttonsY = startY + totalGridHeight + 35.0f;
+        Rectangle btnClear = { screenWidth / 2.0f - 110, buttonsY, 100, 45 };
+        Rectangle btnSolve = { screenWidth / 2.0f + 10, buttonsY, 100, 45 };
+
+        HandleAppInput(state, mousePoint, btnMinus, btnPlus, btnClear, btnSolve, startX, startY, stepSize, cellSize, screenHeight);
 
         BeginDrawing();
         ClearBackground(bgLight);
 
-        DrawText("CROSSSUM SOLVER", 30, 30, 28, textNormal);
-        DrawText("Dynamic Matrix Setup", 30, 65, 16, textMuted);
+        DrawText("SUMPLETE SOLVER", 30, 30, 28, textNormal);
+        DrawText("Dynamic Matric Solver", 30, 65, 16, textMuted);
 
         bool hoverMinus = CheckCollisionPointRec(mousePoint, btnMinus);
         bool hoverPlus = CheckCollisionPointRec(mousePoint, btnPlus);
@@ -70,57 +73,61 @@ int main() {
 
         bool showCursor = ((int)(GetTime() * 2.0)) % 2 == 0;
 
-        for (int i = 0; i < app.gridSize; i++) {
-            for (int j = 0; j < app.gridSize; j++) {
+        for (int i = 0; i < state.gridSize; i++) {
+            for (int j = 0; j < state.gridSize; j++) {
                 Rectangle cellRec = { startX + j * stepSize, startY + i * stepSize, cellSize, cellSize };
                 bool isHovered = CheckCollisionPointRec(mousePoint, cellRec);
-                bool isActive = (app.currentSelection == GRID_CELL && app.selRow == i && app.selCol == j);
+                bool isActive = (state.currentSelection == GRID_CELL && state.selRow == i && state.selCol == j);
 
                 Color bgColor = isActive ? cellActive : (isHovered ? cellBgHover : cellBgNormal);
                 DrawRectangleRounded(cellRec, 0.2f, 0, bgColor);
                 DrawRectangleRoundedLines(cellRec, 0.2f, 0, isActive ? ORANGE : textMuted);
 
-                int textW = MeasureText(app.grid[i][j].c_str(), 20);
+                int textW = MeasureText(state.grid[i][j].c_str(), 20);
 
-                if (app.isSolved && app.solvedBoard[i][j].status == CELL_DELETE) {
-                    DrawText(app.grid[i][j].c_str(), cellRec.x + (cellSize - textW) / 2, cellRec.y + 15, 20, LIGHTGRAY);
+                if (state.isSolved && state.solvedBoard[i][j].status == CELL_DELETE) {
+                    DrawText(state.grid[i][j].c_str(), cellRec.x + (cellSize - textW) / 2, cellRec.y + 20, 20, LIGHTGRAY);
                     DrawLineEx({ cellRec.x + 10, cellRec.y + 10 }, { cellRec.x + cellSize - 10, cellRec.y + cellSize - 10 }, 3.0f, RED);
-                } else if (app.isSolved && app.solvedBoard[i][j].status == KEEP) {
-                    DrawCircleLines(cellRec.x + cellSize / 2, cellRec.y + cellSize / 2, 16.0f, GREEN);
-                    DrawText(app.grid[i][j].c_str(), cellRec.x + (cellSize - textW) / 2, cellRec.y + 15, 20, textNormal);
+                } else if (state.isSolved && state.solvedBoard[i][j].status == KEEP) {
+                    DrawCircleLines(cellRec.x + cellSize / 2, cellRec.y + cellSize / 2, 20.0f, GREEN);
+                    DrawText(state.grid[i][j].c_str(), cellRec.x + (cellSize - textW) / 2, cellRec.y + 20, 20, textNormal);
                 } else {
-                    DrawText(app.grid[i][j].c_str(), cellRec.x + (cellSize - textW) / 2, cellRec.y + 15, 20, textNormal);
+                    DrawText(state.grid[i][j].c_str(), cellRec.x + (cellSize - textW) / 2, cellRec.y + 20, 20, textNormal);
                 }
 
                 if (isActive && showCursor) {
-                    DrawLine(cellRec.x + (cellSize + textW) / 2 + 2, cellRec.y + 10, cellRec.x + (cellSize + textW) / 2 + 2, cellRec.y + 35, textNormal);
+                    DrawLine(cellRec.x + (cellSize + textW) / 2 + 4, cellRec.y + 15, cellRec.x + (cellSize + textW) / 2 + 4, cellRec.y + 45, textNormal);
                 }
             }
         }
 
-        for (int i = 0; i < app.gridSize; i++) {
-            Rectangle targetRec = { startX + app.gridSize * stepSize + 20.0f, startY + i * stepSize, cellSize, cellSize };
+        for (int i = 0; i < state.gridSize; i++) {
+            Rectangle targetRec = { startX + state.gridSize * stepSize + 20.0f, startY + i * stepSize, cellSize, cellSize };
             bool isHovered = CheckCollisionPointRec(mousePoint, targetRec);
-            bool isActive = (app.currentSelection == ROW_TARGET && app.selRow == i);
+            bool isActive = (state.currentSelection == ROW_TARGET && state.selRow == i);
             Color bgColor = isActive ? cellActive : (isHovered ? targetBgHover : targetBgNormal);
+
             DrawRectangleRounded(targetRec, 0.3f, 0, bgColor);
-            int textW = MeasureText(app.rowTargets[i].c_str(), 20);
-            DrawText(app.rowTargets[i].c_str(), targetRec.x + (cellSize - textW) / 2, targetRec.y + 15, 20, targetText);
+            int textW = MeasureText(state.rowTargets[i].c_str(), 20);
+            DrawText(state.rowTargets[i].c_str(), targetRec.x + (cellSize - textW) / 2, targetRec.y + 20, 20, targetText);
+
             if (isActive && showCursor) {
-                DrawLine(targetRec.x + (cellSize + textW) / 2 + 2, targetRec.y + 10, targetRec.x + (cellSize + textW) / 2 + 2, targetRec.y + 35, targetText);
+                DrawLine(targetRec.x + (cellSize + textW) / 2 + 4, targetRec.y + 15, targetRec.x + (cellSize + textW) / 2 + 4, targetRec.y + 45, targetText);
             }
         }
 
-        for (int j = 0; j < app.gridSize; j++) {
-            Rectangle targetRec = { startX + j * stepSize, startY + app.gridSize * stepSize + 20.0f, cellSize, cellSize };
+        for (int j = 0; j < state.gridSize; j++) {
+            Rectangle targetRec = { startX + j * stepSize, startY + state.gridSize * stepSize + 20.0f, cellSize, cellSize };
             bool isHovered = CheckCollisionPointRec(mousePoint, targetRec);
-            bool isActive = (app.currentSelection == COL_TARGET && app.selCol == j);
+            bool isActive = (state.currentSelection == COL_TARGET && state.selCol == j);
             Color bgColor = isActive ? cellActive : (isHovered ? targetBgHover : targetBgNormal);
+
             DrawRectangleRounded(targetRec, 0.3f, 0, bgColor);
-            int textW = MeasureText(app.colTargets[j].c_str(), 20);
-            DrawText(app.colTargets[j].c_str(), targetRec.x + (cellSize - textW) / 2, targetRec.y + 15, 20, targetText);
+            int textW = MeasureText(state.colTargets[j].c_str(), 20);
+            DrawText(state.colTargets[j].c_str(), targetRec.x + (cellSize - textW) / 2, targetRec.y + 20, 20, targetText);
+
             if (isActive && showCursor) {
-                DrawLine(targetRec.x + (cellSize + textW) / 2 + 2, targetRec.y + 10, targetRec.x + (cellSize + textW) / 2 + 2, targetRec.y + 35, targetText);
+                DrawLine(targetRec.x + (cellSize + textW) / 2 + 4, targetRec.y + 15, targetRec.x + (cellSize + textW) / 2 + 4, targetRec.y + 45, targetText);
             }
         }
 
@@ -130,8 +137,8 @@ int main() {
         DrawRectangleRounded(btnSolve, 0.3f, 0, CheckCollisionPointRec(mousePoint, btnSolve) ? btnSolveHover : btnSolveNormal);
         DrawText("SOLVE", btnSolve.x + 23, btnSolve.y + 13, 18, WHITE);
 
-        int msgWidth = MeasureText(app.statusMessage.c_str(), 16);
-        DrawText(app.statusMessage.c_str(), (screenWidth - msgWidth) / 2, screenHeight - 40, 16, app.isSolved ? DARKGREEN : RED);
+        int msgWidth = MeasureText(state.statusMessage.c_str(), 16);
+        DrawText(state.statusMessage.c_str(), (screenWidth - msgWidth) / 2, buttonsY + 65.0f, 16, state.isSolved ? DARKGREEN : RED);
 
         EndDrawing();
     }

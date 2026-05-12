@@ -11,7 +11,7 @@ struct AppState {
     static constexpr int MIN_GRID = 3;
     static constexpr int MAX_GRID = 8;
 
-    int gridSize = MIN_GRID;
+    int gridSize = 3;
     std::vector<std::vector<std::string>> grid;
     std::vector<std::string> rowTargets;
     std::vector<std::string> colTargets;
@@ -21,16 +21,13 @@ struct AppState {
     SelectionType currentSelection = NONE;
     int selRow = -1;
     int selCol = -1;
-    std::string statusMessage = "Enter the puzzle numbers, use Arrow Keys to move.";
+    std::string statusMessage = "Enter numbers and press Solve when ready.";
 
-    AppState()
-        : grid(MAX_GRID, std::vector<std::string>(MAX_GRID, "")),
-          rowTargets(MAX_GRID, ""),
-          colTargets(MAX_GRID, ""),
-          solvedBoard(MAX_GRID, std::vector<Cell>(MAX_GRID)) {}
+    AppState();
 };
 
-bool IsPointInside(const Vector2& point, const Rectangle& rect);
+int safeStoi(const std::string& str);
+
 void HandleAppInput(AppState& state,
                     Vector2 mousePoint,
                     Rectangle btnMinus,

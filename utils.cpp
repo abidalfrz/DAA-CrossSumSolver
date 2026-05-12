@@ -1,67 +1,63 @@
 #include "utils.h"
+
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 using namespace std;
 
-bool IsPointInside(const Vector2& point, const Rectangle& rect) {
-    return CheckCollisionPointRec(point, rect);
+AppState::AppState()
+    : grid(MAX_GRID, vector<string>(MAX_GRID, "")),
+      rowTargets(MAX_GRID, ""),
+      colTargets(MAX_GRID, ""),
+      solvedBoard(MAX_GRID, vector<Cell>(MAX_GRID)) {}
+
+int safeStoi(const string& str) {
+    if (str.empty() || str == "-") throw invalid_argument("Empty or invalid number");
+    return stoi(str);
 }
 
-static void ResetGrid(AppState& s) {
+static void ClearGrid(AppState& state) {
     for (int i = 0; i < AppState::MAX_GRID; i++) {
-        s.rowTargets[i] = "";
-        s.colTargets[i] = "";
+        state.rowTargets[i] = "";
+        state.colTargets[i] = "";
         for (int j = 0; j < AppState::MAX_GRID; j++) {
-            s.grid[i][j] = "";
+            state.grid[i][j] = "";
         }
     }
 }
 
-static void TrySolvePuzzle(AppState& s) {
-    bool isInputComplete = true;
-
-    vector<vector<int>> intGrid(s.gridSize, vector<int>(s.gridSize, 0));
-    vector<int> intRowTargets(s.gridSize, 0);
-    vector<int> intColTargets(s.gridSize, 0);
+static void SolvePuzzle(AppState& state) {
+    vector<vector<int>> intGrid(state.gridSize, vector<int>(state.gridSize, 0));
+    vector<int> intRowTargets(state.gridSize, 0);
+    vector<int> intColTargets(state.gridSize, 0);
 
     try {
-        for (int i = 0; i < s.gridSize; i++) {
-            if (s.rowTargets[i] == "") isInputComplete = false;
-            else intRowTargets[i] = stoi(s.rowTargets[i]);
-
-            if (s.colTargets[i] == "") isInputComplete = false;
-            else intColTargets[i] = stoi(s.colTargets[i]);
-
-            for (int j = 0; j < s.gridSize; j++) {
-                if (s.grid[i][j] == "") isInputComplete = false;
-                else intGrid[i][j] = stoi(s.grid[i][j]);
+        for (int i = 0; i < state.gridSize; i++) {
+            intRowTargets[i] = safeStoi(state.rowTargets[i]);
+            intColTargets[i] = safeStoi(state.colTargets[i]);
+            for (int j = 0; j < state.gridSize; j++) {
+                intGrid[i][j] = safeStoi(state.grid[i][j]);
             }
         }
 
-        if (!isInputComplete) {
-            s.statusMessage = "Error: Please fill all cells and targets before solving!";
-            s.isSolved = false;
-            return;
-        }
-
-        s.statusMessage = "Solving...";
-        bool success = SolveSumplete(intGrid, intRowTargets, intColTargets, s.solvedBoard);
+        state.statusMessage = "Solving...";
+        bool success = SolveSumplete(intGrid, intRowTargets, intColTargets, state.solvedBoard);
 
         if (success) {
-            s.statusMessage = "Puzzle Solved successfully!";
-            s.isSolved = true;
+            state.statusMessage = "Puzzle Solved successfully!";
+            state.isSolved = true;
         } else {
-            s.statusMessage = "Puzzle cannot be solved or has multiple solutions.";
-            s.isSolved = false;
+            state.statusMessage = "Puzzle cannot be solved (invalid configuration).";
+            state.isSolved = false;
         }
     } catch (...) {
-        s.statusMessage = "Data error. Please enter valid numbers.";
-        s.isSolved = false;
+        state.statusMessage = "Error: Please fill all cells properly. '-' alone is invalid.";
+        state.isSolved = false;
     }
 }
 
-void HandleAppInput(AppState& s,
+void HandleAppInput(AppState& state,
                     Vector2 mousePoint,
                     Rectangle btnMinus,
                     Rectangle btnPlus,
@@ -73,106 +69,99 @@ void HandleAppInput(AppState& s,
                     float cellSize,
                     int screenHeight) {
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-        bool actionClicked = false;
-
-        if (IsPointInside(mousePoint, btnMinus) && s.gridSize > AppState::MIN_GRID) {
-            s.gridSize--;
-            s.currentSelection = NONE;
-            s.selRow = -1;
-            s.selCol = -1;
-            s.isSolved = false;
-            actionClicked = true;
+        if (CheckCollisionPointRec(mousePoint, btnMinus) && state.gridSize > AppState::MIN_GRID) {
+            state.gridSize--;
+            state.currentSelection = NONE;
+            state.isSolved = false;
         }
 
-        if (IsPointInside(mousePoint, btnPlus) && s.gridSize < AppState::MAX_GRID) {
-            s.gridSize++;
-            s.currentSelection = NONE;
-            s.selRow = -1;
-            s.selCol = -1;
-            s.isSolved = false;
-            actionClicked = true;
+        if (CheckCollisionPointRec(mousePoint, btnPlus) && state.gridSize < AppState::MAX_GRID) {
+            state.gridSize++;
+            state.currentSelection = NONE;
+            state.isSolved = false;
         }
 
-        if (IsPointInside(mousePoint, btnClear)) {
-            ResetGrid(s);
-            s.statusMessage = "Grid cleared.";
-            s.currentSelection = NONE;
-            s.selRow = -1;
-            s.selCol = -1;
-            s.isSolved = false;
-            actionClicked = true;
+        if (CheckCollisionPointRec(mousePoint, btnClear)) {
+            ClearGrid(state);
+            state.statusMessage = "Grid cleared.";
+            state.currentSelection = NONE;
+            state.isSolved = false;
         }
 
-        if (IsPointInside(mousePoint, btnSolve)) {
-            s.currentSelection = NONE;
-            s.selRow = -1;
-            s.selCol = -1;
-            TrySolvePuzzle(s);
-            actionClicked = true;
+        if (CheckCollisionPointRec(mousePoint, btnSolve)) {
+            state.currentSelection = NONE;
+            SolvePuzzle(state);
         }
 
-        if (!actionClicked) {
-            bool clickedCell = false;
+        bool clickedCell = false;
 
-            for (int i = 0; i < s.gridSize; i++) {
-                for (int j = 0; j < s.gridSize; j++) {
-                    Rectangle cellRec = { startX + j * stepSize, startY + i * stepSize, cellSize, cellSize };
-                    if (IsPointInside(mousePoint, cellRec)) {
-                        s.currentSelection = GRID_CELL;
-                        s.selRow = i;
-                        s.selCol = j;
-                        clickedCell = true;
-                        s.isSolved = false;
-                    }
-                }
-            }
-
-            for (int i = 0; i < s.gridSize; i++) {
-                Rectangle targetRec = { startX + s.gridSize * stepSize + 20.0f, startY + i * stepSize, cellSize, cellSize };
-                if (IsPointInside(mousePoint, targetRec)) {
-                    s.currentSelection = ROW_TARGET;
-                    s.selRow = i;
-                    s.selCol = -1;
+        for (int i = 0; i < state.gridSize; i++) {
+            for (int j = 0; j < state.gridSize; j++) {
+                Rectangle cellRec = { startX + j * stepSize, startY + i * stepSize, cellSize, cellSize };
+                if (CheckCollisionPointRec(mousePoint, cellRec)) {
+                    state.currentSelection = GRID_CELL;
+                    state.selRow = i;
+                    state.selCol = j;
                     clickedCell = true;
-                    s.isSolved = false;
+                    state.isSolved = false;
                 }
             }
+        }
 
-            for (int j = 0; j < s.gridSize; j++) {
-                Rectangle targetRec = { startX + j * stepSize, startY + s.gridSize * stepSize + 20.0f, cellSize, cellSize };
-                if (IsPointInside(mousePoint, targetRec)) {
-                    s.currentSelection = COL_TARGET;
-                    s.selRow = -1;
-                    s.selCol = j;
-                    clickedCell = true;
-                    s.isSolved = false;
-                }
+        for (int i = 0; i < state.gridSize; i++) {
+            Rectangle targetRec = { startX + state.gridSize * stepSize + 20.0f, startY + i * stepSize, cellSize, cellSize };
+            if (CheckCollisionPointRec(mousePoint, targetRec)) {
+                state.currentSelection = ROW_TARGET;
+                state.selRow = i;
+                state.selCol = -1;
+                clickedCell = true;
+                state.isSolved = false;
             }
+        }
 
-            if (!clickedCell && mousePoint.y > 100 && mousePoint.y < screenHeight - 150) {
-                s.currentSelection = NONE;
+        for (int j = 0; j < state.gridSize; j++) {
+            Rectangle targetRec = { startX + j * stepSize, startY + state.gridSize * stepSize + 20.0f, cellSize, cellSize };
+            if (CheckCollisionPointRec(mousePoint, targetRec)) {
+                state.currentSelection = COL_TARGET;
+                state.selRow = -1;
+                state.selCol = j;
+                clickedCell = true;
+                state.isSolved = false;
             }
+        }
+
+        if (!clickedCell && mousePoint.y > 100 && mousePoint.y < screenHeight - 150) {
+            state.currentSelection = NONE;
         }
     }
 
-    if (s.currentSelection != NONE) {
+    if (state.currentSelection != NONE) {
         string* activeStr = nullptr;
-        if (s.currentSelection == GRID_CELL) activeStr = &s.grid[s.selRow][s.selCol];
-        else if (s.currentSelection == ROW_TARGET) activeStr = &s.rowTargets[s.selRow];
-        else if (s.currentSelection == COL_TARGET) activeStr = &s.colTargets[s.selCol];
+        if (state.currentSelection == GRID_CELL) activeStr = &state.grid[state.selRow][state.selCol];
+        else if (state.currentSelection == ROW_TARGET) activeStr = &state.rowTargets[state.selRow];
+        else if (state.currentSelection == COL_TARGET) activeStr = &state.colTargets[state.selCol];
 
         if (activeStr != nullptr) {
             int key = GetCharPressed();
             while (key > 0) {
-                if (s.currentSelection == GRID_CELL) {
-                    if (key >= '1' && key <= '9') {
-                        *activeStr = string(1, (char)key);
-                    }
-                } else {
-                    if (key >= '0' && key <= '9' && activeStr->length() < 3) {
+                bool isMinus = (key == '-');
+                bool isNumber = (key >= '0' && key <= '9');
+
+                int maxLen = (activeStr->length() > 0 && (*activeStr)[0] == '-')
+                                 ? ((state.currentSelection == GRID_CELL) ? 3 : 4)
+                                 : ((state.currentSelection == GRID_CELL) ? 2 : 3);
+
+                if (isMinus && activeStr->empty()) {
+                    *activeStr += (char)key;
+                } else if (isNumber) {
+                    if (*activeStr == "0") {
+                        if (key != '0') *activeStr = string(1, (char)key);
+                    } else if (*activeStr == "-" && key == '0') {
+                    } else if ((int)activeStr->length() < maxLen) {
                         *activeStr += (char)key;
                     }
                 }
+
                 key = GetCharPressed();
             }
 
@@ -182,49 +171,33 @@ void HandleAppInput(AppState& s,
         }
 
         if (IsKeyPressed(KEY_RIGHT)) {
-            if (s.currentSelection == GRID_CELL) {
-                if (s.selCol < s.gridSize - 1) s.selCol++;
-                else {
-                    s.currentSelection = ROW_TARGET;
-                    s.selCol = -1;
-                }
-            } else if (s.currentSelection == COL_TARGET && s.selCol < s.gridSize - 1) {
-                s.selCol++;
+            if (state.currentSelection == GRID_CELL) {
+                if (state.selCol < state.gridSize - 1) state.selCol++;
+                else { state.currentSelection = ROW_TARGET; state.selCol = -1; }
+            } else if (state.currentSelection == COL_TARGET && state.selCol < state.gridSize - 1) {
+                state.selCol++;
             }
         }
 
         if (IsKeyPressed(KEY_LEFT)) {
-            if (s.currentSelection == GRID_CELL && s.selCol > 0) {
-                s.selCol--;
-            } else if (s.currentSelection == ROW_TARGET) {
-                s.currentSelection = GRID_CELL;
-                s.selCol = s.gridSize - 1;
-            } else if (s.currentSelection == COL_TARGET && s.selCol > 0) {
-                s.selCol--;
-            }
+            if (state.currentSelection == GRID_CELL && state.selCol > 0) state.selCol--;
+            else if (state.currentSelection == ROW_TARGET) { state.currentSelection = GRID_CELL; state.selCol = state.gridSize - 1; }
+            else if (state.currentSelection == COL_TARGET && state.selCol > 0) state.selCol--;
         }
 
         if (IsKeyPressed(KEY_DOWN)) {
-            if (s.currentSelection == GRID_CELL) {
-                if (s.selRow < s.gridSize - 1) s.selRow++;
-                else {
-                    s.currentSelection = COL_TARGET;
-                    s.selRow = -1;
-                }
-            } else if (s.currentSelection == ROW_TARGET && s.selRow < s.gridSize - 1) {
-                s.selRow++;
+            if (state.currentSelection == GRID_CELL) {
+                if (state.selRow < state.gridSize - 1) state.selRow++;
+                else { state.currentSelection = COL_TARGET; state.selRow = -1; }
+            } else if (state.currentSelection == ROW_TARGET && state.selRow < state.gridSize - 1) {
+                state.selRow++;
             }
         }
 
         if (IsKeyPressed(KEY_UP)) {
-            if (s.currentSelection == GRID_CELL && s.selRow > 0) {
-                s.selRow--;
-            } else if (s.currentSelection == COL_TARGET) {
-                s.currentSelection = GRID_CELL;
-                s.selRow = s.gridSize - 1;
-            } else if (s.currentSelection == ROW_TARGET && s.selRow > 0) {
-                s.selRow--;
-            }
+            if (state.currentSelection == GRID_CELL && state.selRow > 0) state.selRow--;
+            else if (state.currentSelection == COL_TARGET) { state.currentSelection = GRID_CELL; state.selRow = state.gridSize - 1; }
+            else if (state.currentSelection == ROW_TARGET && state.selRow > 0) state.selRow--;
         }
     }
 }
