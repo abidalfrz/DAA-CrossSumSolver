@@ -26,3 +26,7 @@ Windows :
 g++ ../main.cpp ../solver.cpp ../utils.cpp -o testing.exe -I include -L lib -lraylib -lopengl32 -lgdi32 -lwinmm -static -static-libgcc -static-libstdc++
 ```
 
+How to run :
+
+- go to game.exe
+
